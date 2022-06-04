@@ -69,7 +69,6 @@ class Client:
         data = json.dumps({"email": email, "secret": f"0 {password}", "deviceID": self.device_id, "clientType": 100, "action": "normal", "timestamp": (int(time.time() * 1000))})
         self.headers["ndc-msg-sig"] = self.generate_signature_message(data=data)
         request = session.post(f"{self.api}/g/s/auth/login", data=data, headers=self.headers)
-        print(request.json()['api:statuscode'])
         if request.json()['api:statuscode'] != 0: raise Exception(request.json()['api:message'])
         try: self.sid, self.auid = request.json()["sid"], request.json()["auid"]
         except Exception: raise Exception('Bad email, password or unverified acount')
