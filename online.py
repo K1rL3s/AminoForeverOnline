@@ -48,9 +48,9 @@ def tz_filter():
 
 
 class Client:
-    def __init__(self):
+    def __init__(self, device_id):
         self.api = "https://service.narvii.com/api/v1"
-        self.device_id = self.generate_device_id()
+        self.device_id = self.generate_device_id() if device_id is None else device_id
         self.headers = {"NDCDEVICEID": self.device_id, "SMDEVICEID": "b89d9a00-f78e-46a3-bd54-6507d68b343c", "Accept-Language": "en-EN", "Content-Type": "application/json; charset=utf-8", "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 5.1.1; SM-G973N Build/beyond1qlteue-user 5; com.narvii.amino.master/3.4.33562)", "Host": "service.narvii.com", "Accept-Encoding": "gzip", "Connection": "keep_alive"}
         self.sid, self.auid = None, None
         self.comId = self.get_from_link(link=input('ComLink >> '))['linkInfoV2']['extensions']['community']['ndcId']
@@ -88,7 +88,10 @@ class Client:
 
 
 def main():
-    client = Client()
+    device_id = None
+    if input('Have own deviceId? (y/n) >> ').lower() == 'y':
+        device_id = input('DeviceId >> ')
+    client = Client(device_id)
     client.login(email=input('Email >> '), password=input('Password >> '))
     while True:
         print(f"send_active_object: {client.send_active_object(comId=client.comId, timers=[{'start': int(time.time()), 'end': int(time.time()) + 300} for _ in range(50)], tz=tz_filter())['api:message']}.")
