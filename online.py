@@ -92,6 +92,8 @@ def main():
         device_id = input('DeviceId >> ')
     client = Client(device_id)
     client.login(email=input('Email >> '), password=input('Password >> '))
+    if device_id is None:
+        print('DeviceId >', client.device_id)
     while True:
         print(f"send_active_object: {client.send_active_object(comId=client.comId, timers=[{'start': int(time.time()), 'end': int(time.time()) + 300} for _ in range(50)], tz=tz_filter())['api:message']}.")
         print('start sleep one hour...')
