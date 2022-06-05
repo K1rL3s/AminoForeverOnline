@@ -6,6 +6,7 @@
 <p align="center"><b>Can be used on Heroku</b></p>
 <p align="center"><b>Account must be in a community!</b></p>
 
+If you have an unverified account, use your deviceId.
 
 #### Launch at home
 1. Download online.py and libs from requirements.txt
