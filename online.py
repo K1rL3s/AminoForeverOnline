@@ -10,9 +10,6 @@ from hashlib import sha1
 from json_minify import json_minify
 
 
-session = requests.Session()
-
-
 def tz_filter():
     UTC = {
         "GMT0": 0, "GMT1": 60, "GMT2": 120, "GMT3": 180, "GMT4": 240, "GMT5": 300, "GMT6": 360,
@@ -48,12 +45,14 @@ def tz_filter():
 
 
 class Client:
-    def __init__(self, device_id):
+    def __init__(self, device_id, com_link):
         self.api = "https://service.narvii.com/api/v1"
         self.device_id = self.generate_device_id() if device_id is None else device_id
         self.headers = {"NDCDEVICEID": self.device_id, "SMDEVICEID": "b89d9a00-f78e-46a3-bd54-6507d68b343c", "Accept-Language": "en-EN", "Content-Type": "application/json; charset=utf-8", "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 5.1.1; SM-G973N Build/beyond1qlteue-user 5; com.narvii.amino.master/3.4.33562)", "Host": "service.narvii.com", "Accept-Encoding": "gzip", "Connection": "keep_alive"}
+        self.session = requests.Session()
         self.sid, self.auid = None, None
-        self.comId = self.get_from_link(link=input('ComLink >> '))['linkInfoV2']['extensions']['community']['ndcId']
+        try: self.comId = self.get_from_link(link=com_link)['linkInfoV2']['extensions']['community']['ndcId']
+        except KeyError as e: raise KeyError('Bad link or wrong deviceid!', e)
 
     def generate_signature_message(self, data):
         signature_message = b64encode(bytes.fromhex("42") + new(bytes.fromhex("F8E7A61AC3F725941E3AC7CAE2D688BE97F30B93"), data.encode("utf-8"), sha1).digest()).decode("utf-8")
@@ -68,7 +67,7 @@ class Client:
     def login(self, email, password):
         data = json.dumps({"email": email, "secret": f"0 {password}", "deviceID": self.device_id, "clientType": 100, "action": "normal", "timestamp": (int(time.time() * 1000))})
         self.headers["ndc-msg-sig"] = self.generate_signature_message(data=data)
-        request = session.post(f"{self.api}/g/s/auth/login", data=data, headers=self.headers)
+        request = self.session.post(f"{self.api}/g/s/auth/login", data=data, headers=self.headers)
         if request.json()['api:statuscode'] != 0: raise Exception(request.json()['api:message'])
         try: self.sid, self.auid = request.json()["sid"], request.json()["auid"]
         except Exception: raise Exception('Bad email, password or unverified acount')
@@ -79,25 +78,27 @@ class Client:
         if timers: data["userActiveTimeChunkList"] = timers
         data = json_minify(json.dumps(data))
         self.headers["ndc-msg-sig"] = self.generate_signature_message(data=data)
-        request = session.post(f"{self.api}/x{comId}/s/community/stats/user-active-time?sid={self.sid}", data=data, headers=self.headers)
+        request = self.session.post(f"{self.api}/x{comId}/s/community/stats/user-active-time?sid={self.sid}", data=data, headers=self.headers)
         return request.json()
 
     def get_from_link(self, link):
-        return session.get(f"{self.api}/g/s/link-resolution?q={link}", headers=self.headers).json()
+        return self.session.get(f"{self.api}/g/s/link-resolution?q={link}", headers=self.headers).json()
 
 
 def main():
     device_id = None
     if input('Have own deviceId? (y/n) >> ').lower() == 'y':
         device_id = input('DeviceId >> ')
-    client = Client(device_id)
-    client.login(email=input('Email >> '), password=input('Password >> '))
+    email = input('Email >> ')
+    password = input('Password >> ')
+    com_link = input('ComLink >> ')
+    client = Client(device_id,  com_link)
+    client.login(email=email, password=password)
     if device_id is None:
         print('DeviceId >', client.device_id)
     while True:
         print(f"send_active_object: {client.send_active_object(comId=client.comId, timers=[{'start': int(time.time()), 'end': int(time.time()) + 300} for _ in range(50)], tz=tz_filter())['api:message']}.")
-        print('start sleep one hour...')
-        time.sleep(3600)
+        time.sleep(3599.6)
 
 
 if __name__ == '__main__':
