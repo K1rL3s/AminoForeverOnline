@@ -7,6 +7,7 @@
 <p align="center"><b>Account must be in a community!</b></p>
 
 If you have an unverified account, use your deviceId.
+If you have a 403 error on Heroku, use proxies (line 54)
 
 #### Launch at home
 1. Download online.py and libs from requirements.txt
