@@ -50,6 +50,8 @@ class Client:
         self.device_id = self.generate_device_id() if device_id is None else device_id
         self.headers = {"NDCDEVICEID": self.device_id, "SMDEVICEID": "b89d9a00-f78e-46a3-bd54-6507d68b343c", "Accept-Language": "en-EN", "Content-Type": "application/json; charset=utf-8", "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 5.1.1; SM-G973N Build/beyond1qlteue-user 5; com.narvii.amino.master/3.4.33562)", "Host": "service.narvii.com", "Accept-Encoding": "gzip", "Connection": "keep_alive"}
         self.session = requests.Session()
+        self.proxies = None
+        # self.proxies = {'http': 'https://0.0.0.0:00', 'socks5': 'sock5://1.1.1.1:1'}, 
         self.sid, self.auid = None, None
         try: self.comId = self.get_from_link(link=com_link)['linkInfoV2']['extensions']['community']['ndcId']
         except KeyError as e: raise KeyError('Bad link or wrong deviceid!', e)
@@ -67,7 +69,7 @@ class Client:
     def login(self, email, password):
         data = json.dumps({"email": email, "secret": f"0 {password}", "deviceID": self.device_id, "clientType": 100, "action": "normal", "timestamp": (int(time.time() * 1000))})
         self.headers["ndc-msg-sig"] = self.generate_signature_message(data=data)
-        request = self.session.post(f"{self.api}/g/s/auth/login", data=data, headers=self.headers)
+        request = self.session.post(f"{self.api}/g/s/auth/login", data=data, headers=self.headers, proxies=self.proxies)
         if request.json()['api:statuscode'] != 0: raise Exception(request.json()['api:message'])
         try: self.sid, self.auid = request.json()["sid"], request.json()["auid"]
         except Exception: raise Exception('Bad email, password or unverified acount')
@@ -78,11 +80,11 @@ class Client:
         if timers: data["userActiveTimeChunkList"] = timers
         data = json_minify(json.dumps(data))
         self.headers["ndc-msg-sig"] = self.generate_signature_message(data=data)
-        request = self.session.post(f"{self.api}/x{comId}/s/community/stats/user-active-time?sid={self.sid}", data=data, headers=self.headers)
+        request = self.session.post(f"{self.api}/x{comId}/s/community/stats/user-active-time?sid={self.sid}", data=data, headers=self.headers, proxies=self.proxies)
         return request.json()
 
     def get_from_link(self, link):
-        return self.session.get(f"{self.api}/g/s/link-resolution?q={link}", headers=self.headers).json()
+        return self.session.get(f"{self.api}/g/s/link-resolution?q={link}", headers=self.headers, proxies=self.proxies).json()
 
 
 def main():
